@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>LLVP-kalkyl • Snabb besparing</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#11162a">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+</head>
+<body>
+  <header><div class="wrap"><h1>LLVP-kalkyl – Snabb besparing</h1></div></header>
+
+  <main class="grid">
+    <section class="card"><div class="inner grid">
+      <div class="error" id="err">Ett fel uppstod i webbläsaren. Prova att öppna i Safari/Chrome direkt.</div>
+
+      <div>
+        <label>Värmesystem idag</label>
+        <div class="seg">
+          <input type="radio" name="system" id="sys_fjv" value="fjv" checked><label for="sys_fjv">Fjärrvärme</label>
+          <input type="radio" name="system" id="sys_dir" value="direct"><label for="sys_dir">Direktel</label>
+        </div>
+      </div>
+
+      <div>
+        <label>Årlig värmeanvändning (Q<sub>tot</sub>)</label>
+        <div class="input"><input id="qtot" type="number" min="0" step="100" value="18000"><span class="unit">kWh/år</span></div>
+        <div class="hint">Inkludera tappvarmvatten om det ligger på fjärrvärme/direktel.</div>
+      </div>
+
+      <div id="fjv_wrap_price">
+        <label>Fjärrvärmepris (rörligt)</label>
+        <div class="input"><input id="p_fjv" type="number" min="0" step="0.01" value="1.20"><span class="unit">kr/kWh</span></div>
+      </div>
+
+      <div id="fjv_wrap_fixed">
+        <label>Fjärrvärme fast avgift</label>
+        <div class="input"><input id="f_fjv" type="number" min="0" step="1" value="3000"><span class="unit">kr/år</span></div>
+      </div>
+
+      <div id="dir_wrap_price" style="display:none">
+        <label>Elpris idag (direktel)</label>
+        <div class="input"><input id="p_direct" type="number" min="0" step="0.01" value="1.80"><span class="unit">kr/kWh</span></div>
+      </div>
+
+      <div>
+        <label>Elpris för LLVP (allt in)</label>
+        <div class="input"><input id="p_el" type="number" min="0" step="0.01" value="1.80"><span class="unit">kr/kWh</span></div>
+      </div>
+
+      <div>
+        <label>SCOP (årsvärmefaktor)</label>
+        <div class="input"><input id="scop" type="number" min="1" step="0.1" value="3.2"></div>
+      </div>
+
+      <div>
+        <label>Täckt andel av värmebehovet (p)</label>
+        <input id="p" class="slider" type="range" min="20" max="90" step="1" value="60">
+        <div class="hint">p = <span id="p_val">60</span>% (justera med skjutreglaget)</div>
+      </div>
+
+      <div id="keep_wrap" class="switch">
+        <input id="keep_fjv" type="checkbox" checked><label for="keep_fjv">Behålla fjärrvärmen (rester/VV)</label>
+      </div>
+
+      <div>
+        <label>Investering LLVP (inkl. installation)</label>
+        <div class="input"><input id="inv" type="number" min="0" step="500" value="25000"><span class="unit">kr</span></div>
+      </div>
+
+      <details>
+        <summary>Avancerat</summary>
+        <div style="margin-top:8px" id="vv_wrap">
+          <label>Extra varmvattenkostnad (om fjärrvärme sägs upp)</label>
+          <div class="input"><input id="vv_extra" type="number" min="0" step="100" value="0"><span class="unit">kr/år</span></div>
+        </div>
+        <div style="margin-top:8px">
+          <label>Kyldrift el (valfritt)</label>
+          <div class="input"><input id="cool_kwh" type="number" min="0" step="50" value="0"><span class="unit">kWh/år</span></div>
+        </div>
+      </details>
+
+      <div class="btns">
+        <button class="primary" id="btn_calc" type="button">Beräkna</button>
+        <button id="btn_share" type="button">Dela</button>
+        <button id="btn_reset" type="button">Återställ</button>
+      </div>
+    </div></section>
+
+    <section class="card"><div class="inner">
+      <h3 style="margin:0 0 8px">Resultat</h3>
+      <div class="grid">
+        <div class="kpi"><div class="label">El till LLVP</div><div class="value" id="out_e_el">–</div></div>
+        <div class="kpi"><div class="label" id="label_rest">Kvarvarande fjärrvärme</div><div class="value" id="out_rest">–</div></div>
+        <div class="kpi"><div class="label">Kostnad före</div><div class="value" id="out_before">–</div></div>
+        <div class="kpi"><div class="label">Kostnad efter</div><div class="value" id="out_after">–</div></div>
+        <div class="kpi"><div class="label">Årlig besparing</div><div class="value" id="out_save">–</div></div>
+        <div class="kpi"><div class="label">Återbetalningstid</div><div class="value" id="out_payback">–</div></div>
+      </div>
+      <div class="hint" id="warn" style="display:none">Obs! SCOP ≤ 1 – kontrollera inmatningar.</div>
+    </div></section>
+  </main>
+
+  <script src="app.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function(){
+        navigator.serviceWorker.register('./sw.js').catch(function(e){ console.log('SW fail', e); });
+      });
+    }
+  </script>
+
+</body>
+</html>
